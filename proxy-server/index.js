@@ -23,7 +23,32 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5000;
 const TARGET_API = "http://thesavage.runasp.net";
 
-// Proxy endpoint
+// Proxy for Swagger documentation
+app.all("/swagger*", async (req, res) => {
+  const targetUrl = `${TARGET_API}${req.originalUrl}`;
+  try {
+    const response = await axios({
+      method: req.method,
+      url: targetUrl,
+      data: req.body,
+      headers: {
+        ...req.headers,
+        host: "thesavage.runasp.net",
+      },
+      responseType: req.originalUrl.includes(".html") ? "text" : "stream",
+    });
+
+    if (req.originalUrl.includes(".html")) {
+      res.send(response.data);
+    } else {
+      response.data.pipe(res);
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Proxy endpoint for API requests
 app.all("/api/*", async (req, res) => {
   const targetUrl = `${TARGET_API}${req.originalUrl}`;
   
