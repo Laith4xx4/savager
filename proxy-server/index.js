@@ -15,6 +15,11 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Root path - Welcome message
+app.get("/", (req, res) => {
+  res.send("Savager Proxy is running! Use /api for API requests.");
+});
+
 const PORT = process.env.PORT || 5000;
 const TARGET_API = "http://thesavage.runasp.net";
 
@@ -47,3 +52,5 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`Proxy server running on port ${PORT}`);
   console.log(`Forwarding requests from /api to ${TARGET_API}/api`);
 });
+
+
