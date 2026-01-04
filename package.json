@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://Laith4xx4.github.io/fighterreact",
+  "homepage": "https://Laith4xx4.github.io/savager",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

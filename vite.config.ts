@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/fighterreact/", // <- مهم جدًا للنشر على GitHub Pages
+base: "/savager/",
   server: {
     host: "::",
     port: 8080,

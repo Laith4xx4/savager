@@ -1,7 +1,8 @@
 import * as Types from "@/types";
 
 // Configure your .NET backend URL here
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://thesavage.runasp.net/api";
+// Default to the direct API, but allow overriding via environment variable for the Proxy
+const API_BASE_URL = import.meta.env.VITE_API_PROXY_URL || import.meta.env.VITE_API_URL || "http://thesavage.runasp.net/api";
 
 class ApiClient {
   private baseUrl: string;
