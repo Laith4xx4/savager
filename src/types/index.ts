@@ -54,7 +54,8 @@ export interface UserDto {
   lastName?: string;
   fullName?: string;
   phoneNumber?: string;
-  role: 'Admin' | 'Coach' | 'Member';
+  role: 'Admin' | 'Coach' | 'Member' | 'Client';
+  profilePictureUrl?: string;
 }
 
 export interface AuthResponse {

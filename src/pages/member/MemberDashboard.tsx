@@ -3,64 +3,23 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { UpcomingSessionCard } from '@/components/dashboard/UpcomingSessionCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Flame, Target, TrendingUp, ArrowRight } from 'lucide-react';
+import { Calendar, Flame, Target, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { SessionDto, BookingDto } from '@/types';
-
-// Mock data
-const mockStats = {
-  totalBookings: 24,
-  upcomingBookings: 3,
-  attendedSessions: 21,
-  currentStreak: 5,
-};
-
-const mockUpcomingBookings: (BookingDto & { session: SessionDto })[] = [
-  {
-    id: '1',
-    sessionId: 's1',
-    memberId: 'm1',
-    memberName: 'John Doe',
-    status: 'Confirmed',
-    bookedAt: new Date().toISOString(),
-    session: {
-      id: 's1',
-      classTypeId: 'ct1',
-      classTypeName: 'HIIT Training',
-      coachId: 'c1',
-      coachName: 'Mike Johnson',
-      startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-      endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-      capacity: 20,
-      enrolledCount: 15,
-      status: 'Scheduled',
-      location: 'Studio A',
-    },
-  },
-  {
-    id: '2',
-    sessionId: 's2',
-    memberId: 'm1',
-    memberName: 'John Doe',
-    status: 'Confirmed',
-    bookedAt: new Date().toISOString(),
-    session: {
-      id: 's2',
-      classTypeId: 'ct2',
-      classTypeName: 'Yoga Flow',
-      coachId: 'c2',
-      coachName: 'Sarah Williams',
-      startTime: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(),
-      endTime: new Date(Date.now() + 27 * 60 * 60 * 1000).toISOString(),
-      capacity: 15,
-      enrolledCount: 10,
-      status: 'Scheduled',
-      location: 'Studio B',
-    },
-  },
-];
+import { useMemberDashboard } from '@/hooks/useMemberDashboard';
 
 export default function MemberDashboard() {
+  const { stats, lists, loading } = useMemberDashboard();
+
+  if (loading) {
+    return (
+      <DashboardLayout role="Member">
+        <div className="flex items-center justify-center h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout role="Member">
       <div className="space-y-8">
@@ -74,22 +33,22 @@ export default function MemberDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Bookings"
-            value={mockStats.totalBookings}
+            value={stats.totalBookings}
             icon={<Calendar className="h-6 w-6" />}
           />
           <StatsCard
             title="Upcoming Sessions"
-            value={mockStats.upcomingBookings}
+            value={stats.upcomingBookings}
             icon={<Target className="h-6 w-6" />}
           />
           <StatsCard
             title="Sessions Attended"
-            value={mockStats.attendedSessions}
+            value={stats.attendedSessions}
             icon={<TrendingUp className="h-6 w-6" />}
           />
           <StatsCard
             title="Current Streak"
-            value={`${mockStats.currentStreak} days`}
+            value={`${stats.currentStreak} days`}
             icon={<Flame className="h-6 w-6" />}
           />
         </div>
@@ -105,14 +64,16 @@ export default function MemberDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mockUpcomingBookings.length > 0 ? (
-              mockUpcomingBookings.map((booking) => (
-                <UpcomingSessionCard
-                  key={booking.id}
-                  session={booking.session}
-                  showCancelButton
-                  onCancel={() => console.log('Cancel booking', booking.id)}
-                />
+            {lists.upcomingBookings.length > 0 ? (
+              lists.upcomingBookings.map((booking) => (
+                booking.session ? (
+                  <UpcomingSessionCard
+                    key={booking.id}
+                    session={booking.session}
+                    showCancelButton
+                    onCancel={() => console.log('Cancel booking not implemented in dashboard view')}
+                  />
+                ) : null
               ))
             ) : (
               <div className="text-center py-8">

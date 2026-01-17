@@ -32,9 +32,12 @@ import AdminSessions from "./pages/admin/AdminSessions";
 import AdminClassTypes from "./pages/admin/AdminClassTypes";
 import AdminBookings from "./pages/admin/AdminBookings";
 
+import ClientDashboard from "./pages/client/ClientDashboard";
+
 const App = () => (
-    <AuthProvider>
-      <TooltipProvider>
+  <AuthProvider>
+    <TooltipProvider>
+      <div className="dark">
         <Toaster />
         <Sonner />
         <HashRouter>
@@ -44,7 +47,14 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/coaches" element={<Coaches />} />
             <Route path="/sessions" element={<Sessions />} />
-            
+
+            {/* Client Routes - Protected */}
+            <Route path="/client" element={
+              <ProtectedRoute allowedRoles={['Client']}>
+                <ClientDashboard />
+              </ProtectedRoute>
+            } />
+
             {/* Member Routes - Protected */}
             <Route path="/member" element={
               <ProtectedRoute allowedRoles={['Member']}>
@@ -71,7 +81,7 @@ const App = () => (
                 <MemberReviews />
               </ProtectedRoute>
             } />
-            
+
             {/* Coach Routes - Protected */}
             <Route path="/coach" element={
               <ProtectedRoute allowedRoles={['Coach']}>
@@ -93,7 +103,7 @@ const App = () => (
                 <CoachReviews />
               </ProtectedRoute>
             } />
-            
+
             {/* Admin Routes - Protected */}
             <Route path="/admin" element={
               <ProtectedRoute allowedRoles={['Admin']}>
@@ -125,13 +135,14 @@ const App = () => (
                 <AdminBookings />
               </ProtectedRoute>
             } />
-            
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>
-      </TooltipProvider>
-    </AuthProvider>
+      </div>
+    </TooltipProvider>
+  </AuthProvider>
 );
 
 export default App;

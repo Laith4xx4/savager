@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for stored user on mount
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("authToken");
-    
+
     if (storedUser && storedToken) {
       try {
         setUser(JSON.parse(storedUser));
@@ -39,17 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (userNameOrEmail: string, password: string): Promise<UserDto> => {
     try {
       const response = await authApi.login(userNameOrEmail, password);
-      
+
       // Backend returns { Token: "...", Message?: "..." } or { token: "...", user?: {...} }
       const token = (response as any).Token || (response as any).token;
-      
+
       if (!token) {
         throw new Error("No token received from server");
       }
 
       // Use dedicated utility to extract user info including role
       const userData = getUserFromToken(token, userNameOrEmail);
-      
+
       apiClient.setToken(token);
       localStorage.setItem("user", JSON.stringify(userData));
       setUser(userData);
@@ -63,20 +63,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterDto) => {
     try {
       const response = await authApi.register(data);
-      
+
       // Similar to login, extract token
       const token = (response as any).Token || (response as any).token;
-      
-      if (!token) {
-        throw new Error("No token received from server");
-      }
 
-      // Use dedicated utility
-      const userData = getUserFromToken(token, data.email);
-      
-      apiClient.setToken(token);
-      localStorage.setItem("user", JSON.stringify(userData));
-      setUser(userData);
+      if (token) {
+        // Use dedicated utility
+        const userData = getUserFromToken(token, data.email);
+
+        apiClient.setToken(token);
+        localStorage.setItem("user", JSON.stringify(userData));
+        setUser(userData);
+      } else {
+        // No token returned - implies success but requires manual login (or email verification)
+        // We do not throw an error here, assuming the registration was successful
+        console.log("Registration successful, but no token returned. User may need to login manually.");
+      }
     } catch (error) {
       console.error("Register error:", error);
       throw error;

@@ -40,11 +40,10 @@ const StarRating = ({ rating, onRate, interactive = false }: { rating: number; o
           className={`${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
         >
           <Star
-            className={`h-5 w-5 ${
-              star <= (hovered || rating)
+            className={`h-5 w-5 ${star <= (hovered || rating)
                 ? 'fill-yellow-400 text-yellow-400'
                 : 'text-muted-foreground'
-            }`}
+              }`}
           />
         </button>
       ))}
@@ -55,7 +54,7 @@ const StarRating = ({ rating, onRate, interactive = false }: { rating: number; o
 export default function MemberReviews() {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const { data: memberProfile, error: profileError, execute: fetchProfile } = useApi(
     () => memberProfilesApi.getMyProfile(),
     { autoFetch: true }
@@ -180,7 +179,7 @@ export default function MemberReviews() {
 
   const handleUpdateReview = async () => {
     if (!editingReview) return;
-    
+
     try {
       await feedbackApi.update(editingReview.id, {
         rating: editingReview.rating,
@@ -321,8 +320,8 @@ export default function MemberReviews() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => {
                           setEditingReview({ ...review });
@@ -331,9 +330,9 @@ export default function MemberReviews() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-destructive"
                         onClick={() => handleDeleteReview(review.id)}
                       >
@@ -357,10 +356,10 @@ export default function MemberReviews() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Rating</label>
-                  <StarRating 
-                    rating={editingReview.rating} 
-                    onRate={(r) => setEditingReview({ ...editingReview, rating: r })} 
-                    interactive 
+                  <StarRating
+                    rating={editingReview.rating}
+                    onRate={(r) => setEditingReview({ ...editingReview, rating: r })}
+                    interactive
                   />
                 </div>
                 <div className="space-y-2">

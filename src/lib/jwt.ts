@@ -19,7 +19,7 @@ export function decodeJwt(token: string): any {
 
 export function getUserFromToken(token: string, emailFallback?: string): UserDto {
   const payload = decodeJwt(token);
-  
+
   if (!payload) {
     throw new Error("Invalid token");
   }
@@ -50,7 +50,8 @@ export function getUserFromToken(token: string, emailFallback?: string): UserDto
   const firstName = getValue(["given_name", ClaimTypes.GivenName]);
   const lastName = getValue(["family_name", ClaimTypes.Surname]);
   const phoneNumber = getValue(["phone_number", ClaimTypes.MobilePhone]);
-  
+  const profilePictureUrl = getValue(["picture", "avatar", "profile_picture", "profilePictureUrl"]);
+
   // Role can be a single string or an array of strings
   let role = getValue(["role", ClaimTypes.Role]) || "Member";
   if (Array.isArray(role)) {
@@ -67,10 +68,11 @@ export function getUserFromToken(token: string, emailFallback?: string): UserDto
     userName,
     firstName,
     lastName,
-    fullName: firstName && lastName 
-      ? `${firstName} ${lastName}` 
+    fullName: firstName && lastName
+      ? `${firstName} ${lastName}`
       : (userName || email),
     phoneNumber,
+    profilePictureUrl,
     role,
   };
 }

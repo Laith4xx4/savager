@@ -20,31 +20,32 @@ export default function Coaches() {
 
   const { data: profiles, isLoading: profilesLoading, error: profilesError } = useApi(
     () => coachProfilesApi.getAll(),
-    { autoFetch: isAuthenticated }
+    { autoFetch: true }
   );
 
-  const { data: users, isLoading: usersLoading, error: usersError } = useApi(
+  // We only fetch users if authenticated to get extra details, but main list comes from profiles
+  const { data: users } = useApi(
     () => usersApi.getAll(),
     { autoFetch: isAuthenticated }
   );
 
-  const isLoading = profilesLoading || usersLoading;
-  const error = profilesError || usersError;
+  const isLoading = profilesLoading;
+  const error = profilesError;
 
-  // Join users and profiles
-  const coachUsers = users?.filter(u => u.role === 'Coach') || [];
-  const coaches = coachUsers.map(user => {
-    const profile = profiles?.find(p => p.userName === user.userName);
+  // Map directly from profiles since they represent the public coach directory
+  const coaches = profiles?.map(profile => {
+    // Try to find matching user for extra info if available
+    const user = users?.find(u => u.userName === profile.userName);
     return {
-      id: profile?.id || user.id,
-      userName: user.userName,
-      specialization: profile?.specialization || "New Coach",
-      bio: profile?.bio || "No biography provided yet.",
-      certifications: profile?.certifications,
-      sessionsCount: profile?.sessionsCount || 0,
-      feedbacksCount: profile?.feedbacksCount || 0
+      id: profile.id, // Use profile ID
+      userName: profile.userName,
+      specialization: profile.specialization,
+      bio: profile.bio,
+      certifications: profile.certifications,
+      sessionsCount: profile.sessionsCount,
+      feedbacksCount: profile.feedbacksCount
     };
-  });
+  }) || [];
 
   // Extract unique specializations
   const specializations = coaches
@@ -60,44 +61,6 @@ export default function Coaches() {
     return matchesSearch && matchesSpec;
   }) || [];
 
-  if (!isAuthenticated) {
-    return (
-      <PublicLayout>
-        <div className="min-h-screen bg-background">
-          <section className="bg-gradient-primary py-16 pt-24">
-            <div className="container mx-auto px-4 text-center">
-              <h1 className="text-4xl md:text-5xl font-display font-bold text-primary-foreground mb-4">
-                مدربونا الخبراء
-              </h1>
-              <p className="text-lg text-primary-foreground/70 max-w-2xl mx-auto">
-                تعرف على فريقنا من المحترفين المعتمدين
-              </p>
-            </div>
-          </section>
-
-          <div className="container mx-auto px-4 py-12">
-            <Alert className="max-w-2xl mx-auto">
-              <Lock className="h-4 w-4" />
-              <AlertTitle>تسجيل الدخول مطلوب</AlertTitle>
-              <AlertDescription className="mt-2">
-                <p className="mb-4">
-                  يجب تسجيل الدخول لعرض قائمة المدربين والاطلاع على تفاصيلهم.
-                </p>
-                <div className="flex gap-2">
-                  <Button onClick={() => navigate("/login")}>
-                    تسجيل الدخول
-                  </Button>
-                  <Button variant="outline" onClick={() => navigate("/register")}>
-                    إنشاء حساب جديد
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        </div>
-      </PublicLayout>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -128,21 +91,22 @@ export default function Coaches() {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
-        <section className="bg-gradient-primary py-16 pt-24">
-          <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-primary-foreground mb-4">
+        <section className="relative py-20 pt-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-background z-0" />
+          <div className="container mx-auto px-4 text-center relative z-10">
+            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
               مدربونا الخبراء
             </h1>
-            <p className="text-lg text-primary-foreground/70 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               تعرف على فريقنا من المحترفين المعتمدين المكرسين لمساعدتك في تحقيق أهداف اللياقة البدنية
             </p>
           </div>
         </section>
 
         {/* Filters */}
-        <section className="py-8 border-b border-border">
+        <section className="py-8 border-b border-border/10">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1 max-w-md">
@@ -151,16 +115,17 @@ export default function Coaches() {
                   placeholder="ابحث عن مدربين..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-secondary border-none text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               <div className="flex gap-2 flex-wrap">
                 {specializations.map((spec) => (
                   <Button
                     key={spec}
-                    variant={selectedSpec === spec ? "default" : "outline"}
+                    variant={selectedSpec === spec ? "default" : "secondary"}
                     size="sm"
                     onClick={() => setSelectedSpec(spec)}
+                    className={selectedSpec === spec ? "bg-white text-black hover:bg-white/90" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}
                   >
                     {spec === "All" ? "الكل" : spec}
                   </Button>
@@ -175,7 +140,7 @@ export default function Coaches() {
           <div className="container mx-auto px-4">
             {filteredCoaches.length === 0 ? (
               <div className="text-center py-12">
-                <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <User className="h-16 w-16 mx-auto text-muted-foreground mb-4 opacity-20" />
                 <p className="text-muted-foreground text-lg">لم يتم العثور على مدربين</p>
               </div>
             ) : (
@@ -187,48 +152,43 @@ export default function Coaches() {
                     className="group block animate-fade-in"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <div className="bg-card rounded-xl overflow-hidden shadow-card hover:shadow-elevated transition-all duration-300 hover-lift">
-                      <div className="aspect-[4/3] bg-gradient-primary flex items-center justify-center">
-                        <span className="text-6xl font-display font-bold text-primary-foreground/30">
+                    <div className="bg-secondary/30 border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300 hover:-translate-y-1">
+                      <div className="aspect-[4/3] bg-gradient-to-br from-secondary to-background flex items-center justify-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black/20" />
+                        <span className="text-6xl font-display font-bold text-white/10 relative z-10">
                           {coach.userName.substring(0, 2).toUpperCase()}
                         </span>
                       </div>
 
                       <div className="p-6">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-xl font-display font-semibold group-hover:text-primary transition-colors">
+                          <h3 className="text-xl font-display font-bold text-white group-hover:text-primary transition-colors">
                             {coach.userName}
                           </h3>
                           {coach.certifications && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                            <span className="text-xs bg-white/10 text-white px-2 py-1 rounded-full border border-white/10">
                               معتمد
                             </span>
                           )}
                         </div>
 
-                        <p className="text-primary text-sm font-medium mb-2">
+                        <p className="text-white/60 text-sm font-medium mb-4">
                           {coach.specialization}
                         </p>
 
-                        <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
+                        <p className="text-muted-foreground text-sm line-clamp-2 mb-4 h-10">
                           {coach.bio}
                         </p>
 
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Star className="h-4 w-4" />
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-white/5">
+                          <span className="flex items-center gap-1.5">
+                            <Star className="h-4 w-4 fill-white/10" />
                             {coach.sessionsCount} جلسة
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1.5">
                             💬 {coach.feedbacksCount} تقييم
                           </span>
                         </div>
-
-                        {coach.certifications && (
-                          <p className="text-xs text-muted-foreground mt-2 line-clamp-1">
-                            الشهادات: {coach.certifications}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </Link>

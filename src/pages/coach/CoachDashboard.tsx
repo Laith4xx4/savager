@@ -4,95 +4,36 @@ import { UpcomingSessionCard } from '@/components/dashboard/UpcomingSessionCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Users, Star, TrendingUp, ArrowRight, Clock } from 'lucide-react';
+import { Calendar, Users, Star, ArrowRight, Clock, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { SessionDto, ReviewDto } from '@/types';
 import { format } from 'date-fns';
-
-// Mock data
-const mockStats = {
-  totalSessions: 156,
-  upcomingSessions: 12,
-  totalStudents: 89,
-  averageRating: 4.8,
-};
-
-const mockTodaySessions: SessionDto[] = [
-  {
-    id: 's1',
-    classTypeId: 'ct1',
-    classTypeName: 'HIIT Training',
-    coachId: 'c1',
-    coachName: 'Mike Johnson',
-    startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-    capacity: 20,
-    enrolledCount: 18,
-    status: 'Scheduled',
-    location: 'Studio A',
-  },
-  {
-    id: 's2',
-    classTypeId: 'ct1',
-    classTypeName: 'Strength Training',
-    coachId: 'c1',
-    coachName: 'Mike Johnson',
-    startTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
-    endTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-    capacity: 15,
-    enrolledCount: 12,
-    status: 'Scheduled',
-    location: 'Weight Room',
-  },
-];
-
-const mockRecentReviews: ReviewDto[] = [
-  {
-    id: '1',
-    memberId: 'm1',
-    memberName: 'Sarah Johnson',
-    memberProfilePictureUrl: '',
-    coachId: 'c1',
-    rating: 5,
-    comment: 'Amazing session! Mike really pushes you to your limits but in a supportive way.',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    memberId: 'm2',
-    memberName: 'David Chen',
-    memberProfilePictureUrl: '',
-    coachId: 'c1',
-    rating: 5,
-    comment: 'Best HIIT class I\'ve ever taken. Highly recommend!',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    memberId: 'm3',
-    memberName: 'Emily Brown',
-    memberProfilePictureUrl: '',
-    coachId: 'c1',
-    rating: 4,
-    comment: 'Great workout, learned a lot of new techniques.',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+import { useCoachDashboard } from '@/hooks/useCoachDashboard';
 
 const StarRating = ({ rating }: { rating: number }) => (
   <div className="flex gap-0.5">
     {[1, 2, 3, 4, 5].map((star) => (
       <Star
         key={star}
-        className={`h-4 w-4 ${
-          star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
-        }`}
+        className={`h-4 w-4 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+          }`}
       />
     ))}
   </div>
 );
 
 export default function CoachDashboard() {
+  const { stats, lists, loading } = useCoachDashboard();
+
+  if (loading) {
+    return (
+      <DashboardLayout role="Coach">
+        <div className="flex items-center justify-center h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout role="Coach">
       <div className="space-y-8">
@@ -106,24 +47,22 @@ export default function CoachDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Sessions"
-            value={mockStats.totalSessions}
+            value={stats.totalSessions}
             icon={<Calendar className="h-6 w-6" />}
-            trend={{ value: 12, isPositive: true }}
           />
           <StatsCard
             title="Upcoming Sessions"
-            value={mockStats.upcomingSessions}
+            value={stats.upcomingSessions}
             icon={<Clock className="h-6 w-6" />}
           />
           <StatsCard
             title="Total Students"
-            value={mockStats.totalStudents}
+            value={stats.totalStudents}
             icon={<Users className="h-6 w-6" />}
-            trend={{ value: 8, isPositive: true }}
           />
           <StatsCard
             title="Average Rating"
-            value={mockStats.averageRating}
+            value={stats.averageRating}
             icon={<Star className="h-6 w-6" />}
           />
         </div>
@@ -140,8 +79,8 @@ export default function CoachDashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {mockTodaySessions.length > 0 ? (
-                mockTodaySessions.map((session) => (
+              {lists.todaySessions.length > 0 ? (
+                lists.todaySessions.map((session) => (
                   <UpcomingSessionCard
                     key={session.id}
                     session={session}
@@ -168,31 +107,35 @@ export default function CoachDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockRecentReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="p-4 rounded-xl border border-border hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={review.memberProfilePictureUrl} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {review.memberName.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-foreground">{review.memberName}</span>
-                          <StarRating rating={review.rating} />
+                {lists.recentReviews.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No recent reviews.</p>
+                ) : (
+                  lists.recentReviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="p-4 rounded-xl border border-border hover:border-primary/30 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          {/* Assuming review has member info if extended, but FeedbackResponseDto has memberName only. */}
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {review.memberName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-foreground">{review.memberName}</span>
+                            <StarRating rating={review.rating} />
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{review.comments}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(review.timestamp), 'MMM d, yyyy')}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(review.createdAt), 'MMM d, yyyy')}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

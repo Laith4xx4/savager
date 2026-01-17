@@ -25,9 +25,8 @@ const StarRating = ({ rating }: { rating: number }) => (
     {[1, 2, 3, 4, 5].map((star) => (
       <Star
         key={star}
-        className={`h-4 w-4 ${
-          star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
-        }`}
+        className={`h-4 w-4 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+          }`}
       />
     ))}
   </div>
@@ -71,16 +70,16 @@ export default function CoachReviews() {
   // 3. Filter and Calculate Stats
   const { myReviews, stats, distribution } = useMemo(() => {
     const reviews = allReviews?.filter(r => r.coachId === coachProfile?.id) || [];
-    
+
     const total = reviews.length;
-    const avg = total > 0 
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / total 
+    const avg = total > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
       : 0;
-    
+
     // Calculate distribution safely
     const distMap = new Map<number, number>();
     [5, 4, 3, 2, 1].forEach(r => distMap.set(r, 0));
-    
+
     reviews.forEach(r => {
       const rounded = Math.round(r.rating);
       if (distMap.has(rounded)) {
@@ -159,9 +158,9 @@ export default function CoachReviews() {
             <CardTitle>Rating Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={distribution} layout="vertical">
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={distribution} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
                   <YAxis dataKey="rating" type="category" stroke="hsl(var(--muted-foreground))" width={70} />

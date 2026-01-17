@@ -31,7 +31,8 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     if (user.role === 'Admin') return <Navigate to="/admin" replace />;
     if (user.role === 'Coach') return <Navigate to="/coach" replace />;
     if (user.role === 'Member') return <Navigate to="/member" replace />;
-    
+    if (user.role === 'Client') return <Navigate to="/client" replace />;
+
     return <Navigate to="/" replace />;
   }
 

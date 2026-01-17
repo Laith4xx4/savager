@@ -85,7 +85,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
       {/* Logo */}
       <div className="p-6 border-b border-border">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/savagelogo.ico" alt="The Savage Logo" className="w-10 h-10 object-contain" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="The Savage Logo" className="w-10 h-10 object-contain" />
           <span className="text-xl font-bold text-foreground">The Savage</span>
         </Link>
       </div>

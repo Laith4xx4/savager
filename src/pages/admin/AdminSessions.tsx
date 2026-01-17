@@ -35,23 +35,29 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Search, MoreHorizontal, Eye, Edit, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Search, MoreHorizontal, Eye, Edit, Trash2, Plus, Loader2, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { 
-  SessionResponseDto, 
-  ClassTypeResponseDto, 
+import {
+  SessionResponseDto,
+  ClassTypeResponseDto,
   CoachProfileResponseDto,
-  CreateSessionDto 
+  CreateSessionDto
 } from "@/types";
 import { sessionsApi, classTypesApi, coachProfilesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const safeParseDate = (dateStr: string) => {
   if (!dateStr) return new Date();
-  // If no timezone info, assume UTC from server
-  if (!dateStr.includes('Z') && !dateStr.includes('+')) {
-    return new Date(dateStr + 'Z');
+
+  // If string has Z or +, respect it (UTC or explicit offset)
+  if (dateStr.includes('Z') || dateStr.includes('+')) {
+    return new Date(dateStr);
   }
+
+  // If no timezone, treat as LOCAL time (browser default behavior)
   return new Date(dateStr);
 };
 
@@ -66,13 +72,13 @@ export default function AdminSessions() {
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Note: Backend requires CoachId, ClassTypeId, StartTime, EndTime, Capacity, SessionName
   const [formData, setFormData] = useState<Partial<CreateSessionDto>>({
     capacity: 20,
     sessionName: ""
   });
-  
+
   // Auxiliary state for date/time strings to handle form inputs easier
   const [dateStr, setDateStr] = useState("");
   const [startTimeStr, setStartTimeStr] = useState("");
@@ -144,7 +150,7 @@ export default function AdminSessions() {
 
     try {
       setIsSubmitting(true);
-      
+
       // Construct Date objects
       let startDateTime = new Date(`${dateStr}T${startTimeStr}`);
       let endDateTime = new Date(`${dateStr}T${endTimeStr}`);
@@ -160,26 +166,27 @@ export default function AdminSessions() {
         coachId: formData.coachId,
         capacity: Number(formData.capacity),
         description: formData.description,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString()
+        // Send as Local ISO string to avoid UTC conversion shifts on server
+        startTime: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
+        endTime: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss")
       };
 
       await sessionsApi.create(createDto);
-      
+
       toast({
         title: "Success",
         description: "Session created successfully",
       });
-      
+
       setIsAddDialogOpen(false);
       fetchData();
-      
+
       // Reset form
       setFormData({ capacity: 20, sessionName: "" });
       setDateStr("");
       setStartTimeStr("");
       setEndTimeStr("");
-      
+
     } catch (error) {
       console.error("Error creating session:", error);
       toast({
@@ -194,32 +201,32 @@ export default function AdminSessions() {
 
   const handleDeleteSession = async (id: number) => {
     if (!confirm("Are you sure you want to delete this session?")) return;
-    
+
     try {
       await sessionsApi.delete(id);
       toast({ title: "Session deleted" });
       fetchData();
     } catch (error) {
-      toast({ 
-        title: "Error", 
-        description: "Failed to delete session", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: "Failed to delete session",
+        variant: "destructive"
       });
     }
   };
 
   const filteredSessions = sessions.filter((session) => {
-    const matchesSearch = 
+    const matchesSearch =
       session.sessionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       session.coachName.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (statusFilter === "all") return matchesSearch;
     // Simple status filter logic mapping
     const status = getStatusText(session);
     if (statusFilter === "active") return matchesSearch && status === "In Progress";
     if (statusFilter === "upcoming") return matchesSearch && status === "Scheduled";
     if (statusFilter === "completed") return matchesSearch && status === "Completed";
-    
+
     return matchesSearch;
   });
 
@@ -231,7 +238,7 @@ export default function AdminSessions() {
             <h1 className="text-3xl font-bold text-foreground">Sessions Management</h1>
             <p className="text-muted-foreground mt-1">Create and manage training sessions</p>
           </div>
-          
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
@@ -246,7 +253,7 @@ export default function AdminSessions() {
                   Schedule a new training session.
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="sessionName">Session Name</Label>
@@ -258,11 +265,11 @@ export default function AdminSessions() {
                     onChange={handleInputChange}
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label>Class Type</Label>
-                    <Select 
+                    <Select
                       onValueChange={(val) => setFormData(prev => ({ ...prev, classTypeId: Number(val) }))}
                     >
                       <SelectTrigger>
@@ -277,7 +284,7 @@ export default function AdminSessions() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="grid gap-2">
                     <Label>Coach</Label>
                     <Select
@@ -299,26 +306,47 @@ export default function AdminSessions() {
 
                 <div className="grid gap-2">
                   <Label>Date</Label>
-                  <Input 
-                    type="date" 
-                    value={dateStr}
-                    onChange={(e) => setDateStr(e.target.value)}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !dateStr && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateStr ? format(new Date(dateStr), "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateStr ? new Date(dateStr) : undefined}
+                        onSelect={(date) => setDateStr(date ? format(date, "yyyy-MM-dd") : "")}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label>Start Time</Label>
-                    <Input 
-                      type="time" 
+                    <Input
+                      type="time"
+                      lang="en"
+                      style={{ direction: 'ltr' }}
                       value={startTimeStr}
                       onChange={(e) => setStartTimeStr(e.target.value)}
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label>End Time</Label>
-                    <Input 
-                      type="time" 
+                    <Input
+                      type="time"
+                      lang="en"
+                      style={{ direction: 'ltr' }}
                       value={endTimeStr}
                       onChange={(e) => setEndTimeStr(e.target.value)}
                     />
@@ -346,7 +374,7 @@ export default function AdminSessions() {
                   />
                 </div>
               </div>
-              
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
                 <Button onClick={handleCreateSession} disabled={isSubmitting}>
@@ -391,7 +419,7 @@ export default function AdminSessions() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-               <div className="flex justify-center py-8">
+              <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : (
@@ -423,7 +451,7 @@ export default function AdminSessions() {
                             <span>{format(safeParseDate(session.startTime), 'MMM d, yyyy')}</span>
                             <span className="text-muted-foreground text-xs">
                               {format(safeParseDate(session.startTime), 'hh:mm a')} - {format(safeParseDate(session.endTime), 'hh:mm a')}
-                              {safeParseDate(session.endTime).getDate() !== safeParseDate(session.startTime).getDate() && 
+                              {safeParseDate(session.endTime).getDate() !== safeParseDate(session.startTime).getDate() &&
                                 ` (${format(safeParseDate(session.endTime), 'MMM d')})`}
                             </span>
                           </div>
@@ -452,7 +480,7 @@ export default function AdminSessions() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => handleDeleteSession(session.id)}
                               >

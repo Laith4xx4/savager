@@ -3,7 +3,7 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Dumbbell, Calendar, ClipboardList, TrendingUp, ArrowRight, UserPlus } from 'lucide-react';
+import { Users, Dumbbell, Calendar, ClipboardList, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -17,50 +17,21 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-
-// Mock data
-const mockStats = {
-  totalMembers: 245,
-  totalCoaches: 12,
-  totalSessions: 156,
-  totalBookings: 1247,
-  activeMembers: 189,
-  upcomingSessions: 24,
-  todaySessions: 8,
-};
-
-const memberGrowth = [
-  { month: 'Jan', members: 180 },
-  { month: 'Feb', members: 195 },
-  { month: 'Mar', members: 210 },
-  { month: 'Apr', members: 225 },
-  { month: 'May', members: 238 },
-  { month: 'Jun', members: 245 },
-];
-
-const bookingTrends = [
-  { day: 'Mon', bookings: 45 },
-  { day: 'Tue', bookings: 52 },
-  { day: 'Wed', bookings: 48 },
-  { day: 'Thu', bookings: 61 },
-  { day: 'Fri', bookings: 55 },
-  { day: 'Sat', bookings: 72 },
-  { day: 'Sun', bookings: 38 },
-];
-
-const recentMembers = [
-  { id: 'm1', name: 'Alex Rivera', email: 'alex@email.com', joinedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
-  { id: 'm2', name: 'Sarah Johnson', email: 'sarah@email.com', joinedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-  { id: 'm3', name: 'David Chen', email: 'david@email.com', joinedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
-];
-
-const todaySessions = [
-  { id: 's1', name: 'HIIT Training', coach: 'Mike Johnson', time: '09:00 AM', enrolled: 18, capacity: 20 },
-  { id: 's2', name: 'Yoga Flow', coach: 'Sarah Williams', time: '10:30 AM', enrolled: 12, capacity: 15 },
-  { id: 's3', name: 'Spin Class', coach: 'David Chen', time: '02:00 PM', enrolled: 20, capacity: 25 },
-];
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 
 export default function AdminDashboard() {
+  const { stats, lists, charts, loading } = useAdminDashboard();
+
+  if (loading) {
+    return (
+      <DashboardLayout role="Admin">
+        <div className="flex items-center justify-center h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout role="Admin">
       <div className="space-y-8">
@@ -74,25 +45,23 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Members"
-            value={mockStats.totalMembers}
+            value={stats.totalMembers}
             icon={<Users className="h-6 w-6" />}
-            trend={{ value: 12, isPositive: true }}
           />
           <StatsCard
             title="Active Coaches"
-            value={mockStats.totalCoaches}
+            value={stats.totalCoaches}
             icon={<Dumbbell className="h-6 w-6" />}
           />
           <StatsCard
             title="Today's Sessions"
-            value={mockStats.todaySessions}
+            value={stats.todaySessionsCount}
             icon={<Calendar className="h-6 w-6" />}
           />
           <StatsCard
             title="Total Bookings"
-            value={mockStats.totalBookings}
+            value={stats.totalBookings}
             icon={<ClipboardList className="h-6 w-6" />}
-            trend={{ value: 8, isPositive: true }}
           />
         </div>
 
@@ -106,7 +75,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={memberGrowth}>
+                  <AreaChart data={charts.memberGrowth}>
                     <defs>
                       <linearGradient id="memberGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -144,7 +113,7 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={bookingTrends}>
+                  <LineChart data={charts.bookingTrends}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
                     <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -183,22 +152,26 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {todaySessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary/30 transition-colors"
-                  >
-                    <div>
-                      <h4 className="font-medium text-foreground">{session.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {session.coach} • {session.time}
-                      </p>
+                {lists.todaySessions.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No sessions scheduled for today.</p>
+                ) : (
+                  lists.todaySessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary/30 transition-colors"
+                    >
+                      <div>
+                        <h4 className="font-medium text-foreground">{session.sessionName}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {session.coachName} • {format(new Date(session.startTime), 'hh:mm a')}
+                        </p>
+                      </div>
+                      <Badge variant={session.bookingsCount >= session.capacity ? 'destructive' : 'secondary'}>
+                        {session.bookingsCount}/{session.capacity}
+                      </Badge>
                     </div>
-                    <Badge variant={session.enrolled >= session.capacity ? 'destructive' : 'secondary'}>
-                      {session.enrolled}/{session.capacity}
-                    </Badge>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -215,25 +188,32 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                        {member.name.charAt(0)}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-foreground">{member.name}</h4>
-                        <p className="text-sm text-muted-foreground">{member.email}</p>
+                {lists.recentMembers.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No recent members found.</p>
+                ) : (
+                  lists.recentMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                          {(member.firstName?.[0] || member.userName[0]).toUpperCase()}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-foreground">
+                            {member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.userName}
+                          </h4>
+                          {/* Since email is not directly on MemberProfileResponseDto (it's on UserDto), we fallback or omit if not joined. 
+                                However, often backend returns flat structure. Checking Types: MemberProfileResponseDto has no email. 
+                                It has userName. We'll use userName or ignore email.
+                            */}
+                          <p className="text-sm text-muted-foreground">Joined {format(new Date(member.joinDate), 'MMM d')}</p>
+                        </div>
                       </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {format(member.joinedAt, 'MMM d')}
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
